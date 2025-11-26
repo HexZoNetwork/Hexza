@@ -1,4 +1,4 @@
-# Hexza — Made By Hexzo Lonely
+# Hexza — Made By Hexzo
 ## Table of Contents
 
 - [Features](#features)
@@ -258,4 +258,5 @@ main()
 Contributions are welcome! Please feel free to submit a pull request or open an issue.
 
 Your Contribution Is Very Usefull for me becouse i dont have any team
+
 - Hexzo
