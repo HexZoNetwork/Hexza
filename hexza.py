@@ -51,7 +51,6 @@ class PackageManager:
                     print(f"❌ npm install failed: {result.stderr}")
                     return False
                 
-                # Get npm package info
                 if platform.system() == "Windows":
                     info_result = subprocess.run(
                         ["npm.cmd", "list", package_name, "--json"],
