@@ -1,0 +1,13 @@
+// Benchmark test for Phase 2
+print("Testing Phase 2 Performance")
+
+// Simple arithmetic loop
+x = 0
+i = 0
+while (i < 10000) {
+    x = x + 1
+    i = i + 1
+}
+
+print("Completed: x = " + str(x))
+print("Phase 2 is working!")

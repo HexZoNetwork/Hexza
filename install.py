@@ -91,9 +91,6 @@ def install_linux():
             f"p=os.path.expanduser('~/.local/lib/{APP_NAME.lower()}/{SCRIPT_NAME}')\n"
             f"os.execv(sys.executable,[sys.executable,p]+sys.argv[1:])\n"
         )
-    os.chmod(execp,os.stat(execp).st_mode|stat.S_IEXEC)
-
-    print("\n[INFO] Install complete.")
 
 def uninstall_linux():
     print(f"\n--- Uninstalling {APP_NAME} on Linux ---")
@@ -103,6 +100,34 @@ def uninstall_linux():
     if os.path.exists(execp): os.remove(execp)
     if os.path.exists(lib): shutil.rmtree(lib,ignore_errors=True)
     print("[OK] Uninstalled")
+
+def install_dependencies():
+    """Install optional dependencies for Hexza universal features"""
+    print("\n--- Installing Dependencies ---")
+    dependencies = [
+        ("pygame", "Game Development"),
+        ("flask", "Web Development"),
+        ("numpy", "AI & Math"),
+        ("pyinstaller", "Executable Compiler"),
+    ]
+    
+    for package, purpose in dependencies:
+        try:
+            print(f"📦 Installing {package} ({purpose})...")
+            result = subprocess.run(
+                ["pip", "install", package],
+                capture_output=True,
+                text=True,
+                check=False
+            )
+            if result.returncode == 0:
+                print(f"   ✅ {package} installed")
+            else:
+                print(f"   ⚠️  {package} failed (optional)")
+        except Exception as e:
+            print(f"   ⚠️  {package} failed: {e} (optional)")
+    
+    print("\n[INFO] Dependency installation complete (optional packages)")
 
 def check(cmd, label):
     try:
@@ -128,8 +153,10 @@ def main():
 
     if sys.platform=="win32":
         install_windows()
+        install_dependencies()
     elif sys.platform.startswith("linux"):
         install_linux()
+        install_dependencies()
     else:
         print("[ERROR] Unsupported OS")
         sys.exit(1)

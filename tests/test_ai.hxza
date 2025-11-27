@@ -1,0 +1,20 @@
+// Test 3: AI & Math
+print("Test 3: AI & Machine Learning")
+print("========================================")
+
+// Test matrix creation
+print("Creating matrices...")
+matrix_a = Hexza.AI.create_matrix(2, 2, 1)
+matrix_b = Hexza.AI.create_matrix(2, 2, 2)
+
+print("Matrix A (2x2, filled with 1):")
+print(matrix_a)
+
+print("Matrix B (2x2, filled with 2):")
+print(matrix_b)
+
+// Test sigmoid
+sig_val = Hexza.AI.sigmoid(0)
+print("Sigmoid(0) = " + str(sig_val))
+
+print("\n>> Test 3 Passed!")

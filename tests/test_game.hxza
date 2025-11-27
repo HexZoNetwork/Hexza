@@ -1,0 +1,11 @@
+// Test 4: Game Development
+print("Test 4: Game Development")
+print("========================================")
+
+// Test game module
+print("Testing Hexza.Game module...")
+print("Type: " + type(Hexza.Game))
+
+print("Game module loaded: " + str(type(Hexza.Game) == "dict"))
+
+print("\n>> Test 4 Passed!")

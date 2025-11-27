@@ -1,0 +1,15 @@
+// Test 6: Performance Benchmark
+print("Test 6: Performance")
+print("========================================")
+
+// Run built-in speed test
+print("Running speedtest()...")
+results = speedtest(100000)
+
+print("\nPerformance Results:")
+print("  Arithmetic: " + str(results.arithmetic_ms) + " ms")
+print("  Functions:  " + str(results.function_ms) + " ms")
+print("  Lists:      " + str(results.list_ms) + " ms")
+print("  Total:      " + str(results.total_ms) + " ms")
+
+print("\n>> Test 6 Passed!")

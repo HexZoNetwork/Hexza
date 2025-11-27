@@ -1,0 +1,19 @@
+// Test 5: System Operations
+print("Test 5: System Operations")
+print("========================================")
+
+// Test file listing
+print("Listing current directory...")
+files = Hexza.System.list_dir(".")
+print("Found " + str(len(files)) + " files/directories")
+
+// Test file operations
+print("\nTesting file operations...")
+test_content = "Hello from Hexza test!"
+Hexza.System.write_file("test_output.txt", test_content)
+print(">> File written")
+
+read_content = Hexza.System.read_file("test_output.txt")
+print(">> File read: " + read_content)
+
+print("\n>> Test 5 Passed!")

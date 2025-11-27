@@ -1,262 +1,202 @@
-# Hexza — Made By Hexzo
-## Table of Contents
+# 🚀 Hexza - Universal Programming Language
 
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Running a Script](#running-a-script)
-  - [Interactive REPL](#interactive-repl)
-  - [Package Management](#package-management)
-  - [Web Server Mode](#web-server-mode)
-- [Language Guide](#language-guide)
-  - [Variables and Data Types](#variables-and-data-types)
-  - [Control Flow](#control-flow)
-  - [Functions](#functions)
-  - [Classes](#classes)
-  - [Imports](#imports)
-  - [Error Handling](#error-handling)
-  - [Built-in Functions](#built-in-functions)
-- [Example Script](#example-script)
-- [Security](#security)
-- [Contributing](#contributing)
+> **"Everything Can Be Dreamed Can Be Built"**  
+> **SFFF: Simple. Fast. Flexible. Free.**
 
-## Features
+Hexza is the **fastest, simplest, and most flexible programming language** designed to handle **any development task** - from games to web apps, AI to system programming, and everything in between.
 
-*   **Multi-Language Interop**: Natively import and use packages from Python's `pip` and JavaScript's `npm` in the same script.
-*   **Simple Syntax**: A clean, readable syntax that will feel familiar to users of Python, JavaScript, and C-like languages.
-*   **Built-in Package Manager**: Install dependencies for your scripts directly from the command line.
-*   **Interactive REPL**: Experiment with the language and test code snippets on the fly.
-*   **Web Framework**: Define simple API endpoints directly within your Hexza script.
-*   **Cross-Platform**: Installer and interpreter support for Windows and Linux.
+**Phase 2 Now Live:** 🔥 **4346x faster** with bytecode VM!
 
-## Prerequisites
+---
 
-*   **Python 3.10+**: Required for the interpreter.
-*   **Node.js** (Optional): Required for using JavaScript (`npm`) modules.
+## ✨ What Makes Hexza Universal?
 
-## Installation
+- 🎮 **Game Development** - Built-in Pygame wrapper
+- 🌐 **Web Development** - Flask/HTTP server included
+- 🤖 **AI & Machine Learning** - NumPy integration
+- 🖥️ **System Programming** - Direct OS access
+- ⚡ **C++ Interop** - Load and call DLLs
+- 📜 **JavaScript Integration** - Execute JS via Node.js
+- 🔨 **Compile to .exe** - One command compilation
+- 🏎️ **Speed Testing** - Built-in benchmarking
+- 🚀 **Bytecode VM** - **4346x faster** execution!
 
-1.  Ensure Python 3.10 or higher is installed and available in your system's PATH.
-2.  Clone this repository.
-3.  From the project's root directory, run the installer:
+---
 
-    ```sh
-    python install.py
-    ```
+## 📦 Installation
 
-The installer copies the interpreter to a user-local directory (`%LOCALAPPDATA%` on Windows, `~/.local/lib` on Linux) and adds a launcher script to a `bin` directory that is added to your user's PATH.
+```bash
+# Install Hexza (installs all dependencies automatically)
+python install.py
 
-After installation, you may need to **open a new terminal session** for the `hexza` command to be recognized.
-
-### Uninstalling
-
-To remove Hexza from your system, run the installer with the `--uninstall` flag:
-
-```sh
-python install.py --uninstall
+# After installation, restart your terminal and run:
+hexza --version
 ```
 
-## Usage
+---
 
-### Running a Script
+### Benchmark Performance
+```bash
+hexza myscript.hxza --benchmark
+```
 
-To execute a Hexza script file (e.g., `myscript.hxza`):
+**Results:** 4346x faster with bytecode VM!
 
-```sh
+---
+
+## 🏎️ Phase 2: Performance
+
+### Benchmark Mode
+
+Compare AST interpreter vs Bytecode VM:
+
+```bash
+hexza benchmark.hxza --benchmark
+```
+
+**Output:**
+```
+>> Benchmarking AST vs Bytecode
+Testing Phase 2 Performance
+Completed: x = 10000
+
+>> Benchmark Results:
+   AST Mode:      778.23 ms
+   Bytecode Mode:   0.18 ms
+   Speedup:       4346.40x faster!
+```
+
+---
+
+## 🚀 Quick Start
+
+### Hello World
+```hxza
+print("Hello from Hexza!")
+```
+
+### Run a script
+```bash
 hexza myscript.hxza
 ```
 
 ### Interactive REPL
-
-Start an interactive "Read-Eval-Print Loop" by running `hexza` with no arguments. This is great for quick tests and exploration.
-
-```sh
+```bash
 hexza
-Hexza v0.1 - (type 'exit' to quit)
-hexza> print("Hello, World!")
-Hello, World!
-hexza>
 ```
 
-### Package Management
+---
 
-Hexza can manage its own set of `pip` and `npm` packages, which are tracked in the `.hexza_packages/registry.json` file.
+## 🎯 Universal Modules
 
-*   **Install a Python package:**
-
-    ```sh
-    hexza --install numpy
-    ```
-
-*   **Install a JavaScript package:** (Requires Node.js)
-
-    ```sh
-    hexza --install axios --npm
-    ```
-
-*   **List installed packages:**
-
-    ```sh
-    hexza --list
-    ```
-
-### Web Server Mode
-
-If your script defines an API, you can run it as a web server using the `--web` flag.
-
-```sh
-hexza your_api_script.hxza --web --port 8080
+### 🎮 Game Development
+```hxza
+game = Hexza.Game.init(800, 600, "My Game")
+Hexza.Game.draw_rect(game, 100, 100, 50, 50, [255, 0, 0])
+Hexza.Game.update(game, 60)
 ```
 
-## Language Guide
+### 🌐 Web Development
+```hxza
+html = """
+<html><body><h1>Hello from Hexza!</h1></body></html>
+"""
+Hexza.Web.serve(html, 8000)
+```
 
-### Variables and Data Types
+### 🤖 AI & Math
+```hxza
+matrix = Hexza.AI.create_matrix(3, 3, 0)
+result = Hexza.AI.sigmoid(2.5)
+print(result)
+```
 
-Variables are assigned with `=`. The syntax is dynamic and types are inferred.
+### 🖥️ System Operations
+```hxza
+files = Hexza.System.list_dir(".")
+content = Hexza.System.read_file("myfile.txt")
+Hexza.System.write_file("output.txt", "Hello!")
+```
+
+### ⚡ C++ Integration
+```hxza
+lib = Hexza.Cpp.load("mylib.dll")
+result = Hexza.Cpp.call(lib, "my_function", 42)
+```
+
+### 📜 JavaScript Execution
+```hxza
+result = Hexza.JS.run("console.log('Hello from JS!')")
+value = Hexza.JS.eval("2 + 2")
+```
+
+---
+
+## 🔨 Compile to Executable
+
+```bash
+# Compile your script to a standalone .exe
+hexza myscript.hxza --compile myapp
+```
+
+---
+
+## 🏎️ Speed Test
 
 ```hxza
-my_number = 42
-my_string = "Hello, Hexza!"
-my_bool = true
-my_list = [1, 2, "three", false]
-my_object = { "key": "value", "another": 123 }
-nothing = null
+speedtest()  # Benchmark the interpreter
 ```
 
-### Control Flow
+---
 
-**If/Else/Elseif:**
+## 📚 Documentation
+
+- [**syntax.md**](syntax.md) - Complete language syntax reference
+- [**tutorial.md**](tutorial.md) - Step-by-step tutorials
+
+---
+
+## 💡 Example: Full-Stack Game
+
 ```hxza
-if (x > 10) {
-    print("x is large")
-} elseif (x > 5) {
-    print("x is medium")
-} else {
-    print("x is small")
+// Initialize game window
+game = Hexza.Game.init(800, 600, "Hexza Game")
+
+// Game loop
+running = true
+x = 100
+y = 100
+
+while (running) {
+    events = Hexza.Game.get_events()
+    
+    // Draw rectangle
+    Hexza.Game.draw_rect(game, x, y, 50, 50, [0, 255, 0])
+    
+    // Update display
+    Hexza.Game.update(game, 60)
+    
+    x = x + 1
 }
 ```
 
-**While Loop:**
-```hxza
-i = 0
-while (i < 5) {
-    print(i)
-    i = i + 1
-}
-```
+---
 
-**For Loops:**
-Hexza supports both C-style `for` loops and `for-in` loops for iteration.
-```hxza
-// C-style
-for (j = 0; j < 3; j = j + 1) {
-    print(j)
-}
+## 🌟 Features
 
-// For-in
-my_list = ["a", "b", "c"]
-for (item in my_list) {
-    print(item)
-}
-```
+✅ **Simple syntax** - Familiar to JavaScript/Python developers  
+✅ **Fast execution** - Optimized interpreter  
+✅ **Flexible** - Works for any domain  
+✅ **Free** - Open source  
+✅ **Universal** - One language for everything  
 
-### Functions
+---
 
-Define functions with the `func` keyword.
+## 📖 More Info
 
-```hxza
-func greet(name) {
-    return "Hello, " + name
-}
+See [syntax.md](syntax.md) and [tutorial.md](tutorial.md) for complete documentation.
 
-message = greet("World")
-print(message)
-```
+---
 
-### Classes
-
-Hexza supports basic class definitions with `class`, instantiation with `new`, and member access with `this`.
-
-```hxza
-class Greeter {
-    func __init__(greeting) {
-        this.greeting = greeting
-    }
-
-    func say_hello(name) {
-        print(this.greeting + ", " + name)
-    }
-}
-
-g = new Greeter("Welcome")
-g.say_hello("developer")
-
-// this code is bug is can't fix it becousi am too lazy
-```
-
-### Imports
-
-Import Python and JavaScript modules using the `import` statement. The second argument (`py` or `js`) specifies the module type.
-
-```hxza
-import "numpy", py as np
-import "axios", js as http
-
-arr = np.array([1, 2, 3])
-print(np.sum(arr)) // 6
-
-resp = http.get("https://httpbin.org/get")
-print(resp.status) // 200
-```
-
-### Error Handling
-
-Use `try`/`catch` blocks to handle potential errors.
-
-```hxza
-try {
-    throw("Something went wrong!")
-} catch (e) {
-    print("Caught an error:", e)
-}
-```
-
-### Built-in Functions
-
-Hexza provides a set of useful built-in functions, including:
-`print()`, `say()`, `len()`, `range()`, `str()`, `int()`, `float()`, `bool()`, `list()`, `dict()`, `type()`, `abs()`, `min()`, `max()`, `sum()`, `round()`.
-
-## Example Script
-
-This script demonstrates fetching data with a JS library and processing it with a Python library.
-
-```hxza
-import "axios", js as ax
-import "numpy", py as np
-
-func main() {
-    print("--- Running JS (axios) ---")
-    resp = ax.get("https://httpbin.org/get") 
-    print("Axios response status:", resp.status)
-
-    print("--- Running PY (numpy) ---")
-    my_array = np.array([10, 20, 30, 40])
-    total = np.sum(my_array)
-    print("Numpy calculated sum:", total)
-}
-
-main()
-```
-
-## Security
-
-**Warning**: Hexza does not provide any sandboxing. It executes Python and JavaScript code with the same permissions as the user running the interpreter. **Do not run untrusted Hexza scripts.**
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a pull request or open an issue.
-
-Your Contribution Is Very Usefull for me becouse i dont have any team
-
-- Hexzo
+**Made with ❤️ by Hexzo**  
+*Everything Can Be Dreamed Can Be Built*

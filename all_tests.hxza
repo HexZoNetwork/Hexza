@@ -1,0 +1,77 @@
+// Test Runner - Run all tests manually
+print("🚀 Hexza Comprehensive Test Suite")
+print("=" * 50)
+print("")
+
+// Test counters
+total = 0
+passed = 0
+failed = 0
+
+// Helper function to run test
+func run_test(test_name, test_func) {
+    print("\n" + test_name)
+    print("-" * 50)
+    try {
+        test_func()
+        print("✅ PASSED")
+        passed = passed + 1
+    } catch (e) {
+        print("❌ FAILED: " + str(e))
+        failed = failed + 1
+    }
+    total = total + 1
+}
+
+// Test 1: Basic Features
+func test_basics() {
+    x = 10
+    y = 20
+    z = x + y
+    print("Math: 10 + 20 = " + str(z))
+    
+    arr = [1, 2, 3]
+    print("Array length: " + str(len(arr)))
+}
+
+// Test 2: Web Module
+func test_web() {
+    print("Web module type: " + type(Hexza.Web))
+}
+
+// Test 3: AI Module
+func test_ai() {
+    matrix = Hexza.AI.create_matrix(2, 2, 1)
+    print("Matrix created: " + str(type(matrix)))
+}
+
+// Test 4: System Module
+func test_system() {
+    files = Hexza.System.list_dir(".")
+    print("Files in directory: " + str(len(files)))
+}
+
+// Test 5: Performance
+func test_performance() {
+    results = speedtest(10000)
+    print("Speedtest total: " + str(results.total_ms) + " ms")
+}
+
+// Run all tests
+run_test("Test 1: Basic Features", test_basics)
+run_test("Test 2: Web Module", test_web)
+run_test("Test 3: AI Module", test_ai)
+run_test("Test 4: System Module", test_system)
+run_test("Test 5: Performance", test_performance)
+
+// Summary
+print("\n" + "=" * 50)
+print("SUMMARY")
+print("=" * 50)
+print("Total:  " + str(total))
+print("✅ Passed: " + str(passed))
+print("❌ Failed: " + str(failed))
+
+if (failed == 0) {
+    print("\n🎉 ALL TESTS PASSED!")
+}

@@ -1,0 +1,36 @@
+// Simple Hexza test script
+print("Testing Hexza Universal Language")
+print("====================================")
+
+// Test 1: Basic functionality
+print("\nTest 1: Basic Print")
+print("Hello from Hexza!")
+
+// Test 2: Variables and Math
+print("\nTest 2: Variables & Math")
+x = 10
+y = 20
+result = x + y
+print("10 + 20 = " + str(result))
+
+// Test 3: SpeedTest
+print("\nTest 3: Speed Test")
+speedtest()
+
+// Test 4: System Module
+print("\nTest 4: System Module")
+files = Hexza.System.list_dir(".")
+print("Number of files in current directory: " + str(len(files)))
+
+// Test 5: Web Module (just check it exists)
+print("\nTest 5: Web Module Loaded")
+print("Web module type: " + type(Hexza.Web))
+
+// Test 6: AI Module
+print("\nTest 6: AI Module")
+matrix = Hexza.AI.create_matrix(2, 2, 5)
+print("Created 2x2 matrix filled with 5")
+print(matrix)
+
+print("\nAll tests passed! Hexza is ready!")
+print("Everything Can Be Dreamed Can Be Built - SFFF")

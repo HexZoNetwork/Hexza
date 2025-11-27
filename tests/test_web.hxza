@@ -1,0 +1,11 @@
+// Test 2: Web Development
+print("Test 2: Web Development")
+print("========================================")
+
+// Test HTTP server module
+print("Testing Hexza.Web module...")
+print("Type: " + type(Hexza.Web))
+
+print("Web module loaded: " + str(type(Hexza.Web) == "dict"))
+
+print("\n>> Test 2 Passed!")

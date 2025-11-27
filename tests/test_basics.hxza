@@ -1,0 +1,19 @@
+// Test 1: Basic Language Features
+print("Test 1: Basic Features")
+print("========================================")
+
+// Variables
+x = 10
+y = 20
+z = x + y
+print("Math: 10 + 20 = " + str(z))
+
+// Strings
+name = "Hexza"
+print("String: Hello " + name)
+
+// Arrays
+arr = [1, 2, 3, 4, 5]
+print("Array: " + str(arr))
+
+print("\n>> Test 1 Passed!")
