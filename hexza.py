@@ -17,6 +17,7 @@ class PackageManager:
         self.registry_path = Path(registry_path)
         self.registry_path.mkdir(exist_ok=True)
         self.packages: Dict[str, dict] = {}
+        self.native_libs: Dict[str, str] = {}
         self.load_registry()
     
     def load_registry(self) -> None:
@@ -24,11 +25,30 @@ class PackageManager:
         if registry_file.exists():
             with open(registry_file, 'r', encoding='utf-8') as f:
                 self.packages = json.load(f)
+                
+        native_file = self.registry_path / "native.json"
+        if native_file.exists():
+            with open(native_file, 'r', encoding='utf-8') as f:
+                self.native_libs = json.load(f)
     
     def save_registry(self) -> None:
         registry_file = self.registry_path / "registry.json"
         with open(registry_file, 'w', encoding='utf-8') as f:
             json.dump(self.packages, f, indent=2)
+            
+        native_file = self.registry_path / "native.json"
+        with open(native_file, 'w', encoding='utf-8') as f:
+            json.dump(self.native_libs, f, indent=2)
+            
+    def track_native(self, lib_name: str, lib_path: str) -> None:
+        """Track a native library (DLL/SO)"""
+        self.native_libs[lib_name] = str(Path(lib_path).resolve())
+        self.save_registry()
+        print(f"[OK] Native library tracked: {lib_name} -> {self.native_libs[lib_name]}")
+        
+    def get_native_path(self, lib_name: str) -> Optional[str]:
+        """Get path to a tracked native library"""
+        return self.native_libs.get(lib_name)
     
     def install(self, package_name: str, use_npm: bool = False) -> bool:
         try:
@@ -290,6 +310,35 @@ class BytecodeInstruction:
     arg: Any = None
     line: int = 0
 
+class HexzaFormatter:
+    def __init__(self, indent_size=4):
+        self.indent_size = indent_size
+        
+    def format(self, source: str) -> str:
+        lines = source.split('\n')
+        formatted_lines = []
+        indent_level = 0
+        
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                formatted_lines.append("")
+                continue
+                
+            # Decrease indent for closing braces
+            if stripped.startswith('}') or stripped.startswith(']'):
+                indent_level = max(0, indent_level - 1)
+                
+            # Add indentation
+            indent = " " * (indent_level * self.indent_size)
+            formatted_lines.append(f"{indent}{stripped}")
+            
+            # Increase indent for opening braces
+            if stripped.endswith('{') or stripped.endswith('['):
+                indent_level += 1
+                
+        return '\n'.join(formatted_lines)
+
 class BytecodeCompiler:
     """Compiles AST to bytecode"""
     def __init__(self):
@@ -351,6 +400,68 @@ class BytecodeCompiler:
         if val not in self.constants:
             self.constants.append(val)
         return self.constants.index(val)
+
+from collections import UserDict
+
+class Scope(UserDict):
+    def __init__(self, parent=None):
+        super().__init__()
+        self.parent = parent
+        self.consts = set()
+    
+    def get(self, key, default=None):
+        if key in self.data:
+            return self.data[key]
+        if self.parent:
+            return self.parent.get(key, default)
+        return default
+        
+    def __getitem__(self, key):
+        if key in self.data:
+            return self.data[key]
+        if self.parent:
+            return self.parent[key]
+        raise KeyError(key)
+        
+    def __setitem__(self, key, value):
+        # Check if const in current scope
+        if key in self.consts:
+            raise HexzaError(f"Assignment to constant variable '{key}'")
+            
+        # If variable exists in current scope, update it
+        if key in self.data:
+            self.data[key] = value
+            return
+            
+        # If variable exists in parent scope, update it there
+        if self.parent and self.parent.has_key(key):
+            self.parent[key] = value
+            return
+             
+        # Otherwise, define in current scope (default behavior)
+        self.data[key] = value
+        
+    def declare(self, key, value, is_const=False):
+        if key in self.data:
+            raise HexzaError(f"Variable '{key}' already declared in this scope")
+        self.data[key] = value
+        if is_const:
+            self.consts.add(key)
+            
+    def has_key(self, key):
+        if key in self.data: return True
+        if self.parent: return self.parent.has_key(key)
+        return False
+        
+    def copy(self):
+        # For function closures, we might want a new scope with this as parent?
+        # Or a shallow copy of data?
+        # Hexza v1 used dict.copy(). 
+        # For backward compat, we'll return a new Scope with same parent and data copy
+        new_scope = Scope(self.parent)
+        new_scope.data = self.data.copy()
+        new_scope.consts = self.consts.copy()
+        return new_scope
 
 class BytecodeVM:
     """Fast bytecode virtual machine"""
@@ -1589,7 +1700,54 @@ class VM:
             "System": self._create_system_module(),
             "Cpp": self._create_cpp_module(),
             "JS": self._create_js_module(),
+            "OS": self._create_os_module(),
             "speedtest": self.builtin_speedtest,
+        }
+    
+    def _create_os_module(self) -> Dict[str, Any]:
+        """Low-level OS and memory operations module"""
+        import ctypes
+        import sys
+        
+        def os_alloc(size):
+            """Allocate raw memory"""
+            return ctypes.create_string_buffer(size)
+            
+        def os_free(ptr):
+            """Free memory (noop for python managed buffers but kept for API compat)"""
+            pass
+            
+        def os_write(ptr, data, offset=0):
+            """Write data to memory pointer"""
+            if isinstance(data, str):
+                data = data.encode('utf-8')
+            ctypes.memmove(ctypes.addressof(ptr) + offset, data, len(data))
+            
+        def os_read(ptr, size, offset=0):
+            """Read data from memory pointer"""
+            return ctypes.string_at(ctypes.addressof(ptr) + offset, size)
+            
+        def os_address(ptr):
+            """Get memory address"""
+            return ctypes.addressof(ptr)
+            
+        def os_sizeof(ptr):
+            """Get size of object"""
+            return ctypes.sizeof(ptr)
+            
+        def os_platform():
+            """Get platform info"""
+            return sys.platform
+            
+        return {
+            "alloc": os_alloc,
+            "free": os_free,
+            "write": os_write,
+            "read": os_read,
+            "address": os_address,
+            "sizeof": os_sizeof,
+            "platform": os_platform,
+            "ptr_size": ctypes.sizeof(ctypes.c_void_p)
         }
     
     def _create_game_module(self) -> Dict[str, Any]:
@@ -2499,12 +2657,15 @@ def main() -> None:
     parser.add_argument("script", nargs="?", help="Script file to execute (.hxza)")
     parser.add_argument("--install", metavar="PACKAGE", help="Install a package (pip or npm)")
     parser.add_argument("--npm", action="store_true", help="Use npm instead of pip for installation")
+    parser.add_argument("--track-native", nargs=2, metavar=("NAME", "PATH"), help="Track a native library")
     parser.add_argument("--list", action="store_true", help="List installed packages")
     parser.add_argument("--web", action="store_true", help="Run web server after script")
     parser.add_argument("--port", type=int, default=5000, help="Web server port (default: 5000)")
     parser.add_argument("--host", default="127.0.0.1", help="Web server host (default: 127.0.0.1)")
     parser.add_argument("--version", action="store_true", help="Show Hexza version")
     parser.add_argument("--compile", metavar="OUTPUT", help="Compile script to executable")
+    parser.add_argument("--compile-native", metavar="OUTPUT", help="Compile script to native executable (LLVM)")
+    parser.add_argument("--fmt", metavar="FILE", help="Format Hexza source file")
     
     # Phase 2 flags
     parser.add_argument("--use-bytecode", action="store_true", help="Use bytecode VM (faster)")
@@ -2516,10 +2677,6 @@ def main() -> None:
         print("Hexza v1.0 - Universal Programming Language")
         print("Features: Game Dev, Web Dev, AI, OS, C++/JS Interop, Compiler")
         print("Motto: Everything Can Be Dreamed Can Be Built - SFFF (Simple Fast Flexible Free)")
-        print("\nPhase 2 Features:")
-        print("  - Bytecode VM (use --use-bytecode for 10x+ speed)")
-        print("  - Async Runtime (async/await support)")
-        print("  - Enhanced Error Messages")
         return
     
     pkg_mgr = PackageManager()
@@ -2531,7 +2688,54 @@ def main() -> None:
     if args.install:
         success = pkg_mgr.install(args.install, use_npm=args.npm)
         sys.exit(0 if success else 1)
+        
+    if args.track_native:
+        name, path = args.track_native
+        pkg_mgr.track_native(name, path)
+        sys.exit(0)
+        
+    if args.fmt:
+        try:
+            path = Path(args.fmt)
+            if not path.exists():
+                print(f"❌ File not found: {args.fmt}")
+                sys.exit(1)
+                
+            content = path.read_text(encoding='utf-8')
+            formatter = HexzaFormatter()
+            formatted = formatter.format(content)
+            path.write_text(formatted, encoding='utf-8')
+            print(f"[OK] Formatted {args.fmt}")
+            sys.exit(0)
+        except Exception as e:
+            print(f"[ERROR] Formatting failed: {e}")
+            sys.exit(1)
     
+    if args.compile_native:
+        if not args.script:
+            print("❌ Error: Please specify a script to compile")
+            sys.exit(1)
+            
+        try:
+            from llvm_backend import LLVMCompiler
+            compiler = LLVMCompiler()
+            
+            # For now, just compile a dummy function to test integration
+            ir_code = compiler.compile_function("main", [], "int", None)
+            
+            output_ll = Path(args.compile_native).with_suffix(".ll")
+            output_ll.write_text(ir_code, encoding='utf-8')
+            
+            print(f"[OK] Generated LLVM IR: {output_ll}")
+            print(">> Native compilation requires clang/llc (not fully implemented yet)")
+            sys.exit(0)
+        except ImportError:
+            print("[ERROR] llvm_backend.py not found or llvmlite missing")
+            sys.exit(1)
+        except Exception as e:
+            print(f"[ERROR] Native compilation failed: {e}")
+            sys.exit(1)
+            
     if args.compile:
         if not args.script:
             print("❌ Error: Please specify a script to compile")
