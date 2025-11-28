@@ -9,9 +9,13 @@ import urllib.parse
 import importlib.util
 from abc import ABC
 import traceback
+import logging
 import readline
 import heapq
 from collections import deque
+# Set up logging for the application
+logging.basicConfig(level=logging.INFO)
+
 class PackageManager:
     def __init__(self, registry_path: str = ".hexza_packages"):
         self.registry_path = Path(registry_path)
@@ -2267,8 +2271,8 @@ function sanitize(obj) {
                 return jsonify({"error": str(e)}), 500
 
             except Exception as e:
-                return jsonify({"error": str(e)}), 500
-
+                logging.error("Unhandled exception in handler: %s", traceback.format_exc())
+                return jsonify({"error": "Internal server error"}), 500
         self.web_app.add_url_rule(
             path,
             endpoint=f"{method}_{path}",
