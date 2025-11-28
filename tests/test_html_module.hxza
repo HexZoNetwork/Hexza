@@ -1,0 +1,23 @@
+// Test html module functions
+product_data = {
+    "name": "Test Product",
+    "price": "99.000",
+    "image": "https://picsum.photos/300"
+}
+
+// Test tag function
+card = html.tag("div", {"class": "card"}, [
+    html.tag("img", {"src": product_data.image}, null),
+    html.tag("h3", {}, [product_data.name]),
+    html.tag("div", {"class": "price"}, ["Rp " + product_data.price])
+])
+
+print(card)
+
+// Test shortcut functions
+simple = html.div({"class": "container"}, [
+    html.h1({}, ["Store"]),
+    html.p({}, ["Welcome to our store"])
+])
+
+print(simple)

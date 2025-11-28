@@ -991,6 +991,12 @@ class Parser:
             return self.parse_while()
         if token.type == TokenType.FOR:
             return self.parse_for()
+        if token.type == TokenType.LET:
+            return self.parse_var_declaration('let')
+        if token.type == TokenType.CONST:
+            return self.parse_var_declaration('const')
+        if token.type == TokenType.VAR:
+            return self.parse_var_declaration('var')
         if token.type == TokenType.FUNC:
             return self.parse_function()
         if token.type == TokenType.CLASS:
@@ -1011,6 +1017,11 @@ class Parser:
             return self.parse_try_catch()
         if token.type == TokenType.THROW:
             return self.parse_throw()
+        if token.type == TokenType.ASYNC:
+            self.consume()  # consume 'async'
+            if self.peek().type == TokenType.FUNC:
+                return self.parse_function(is_async=True)
+            raise SyntaxError(f"Expected 'func' after 'async', got {self.peek().type.value}")
         if token.type == TokenType.API:
             return self.parse_api_definition()
         expr = self.parse_expression()
@@ -1102,23 +1113,57 @@ class Parser:
             self.consume(TokenType.RBRACE)
             return ("for", init, cond, inc, body)
     
-    def parse_function(self) -> tuple:
+    def parse_function(self, is_async: bool = False) -> tuple:
         self.consume(TokenType.FUNC)
         name = self.consume(TokenType.IDENTIFIER).value
         self.consume(TokenType.LP)
         
         params = []
+        param_types = []
         while self.peek().type != TokenType.RP:
-            params.append(self.consume(TokenType.IDENTIFIER).value)
+            param_name = self.consume(TokenType.IDENTIFIER).value
+            param_type = None
+            # Check for type annotation: name: type
+            if self.peek().type == TokenType.COLON:
+                self.consume(TokenType.COLON)
+                param_type = self.consume(TokenType.IDENTIFIER).value
+            params.append(param_name)
+            param_types.append(param_type)
             if self.peek().type == TokenType.COMMA:
                 self.consume()
         
         self.consume(TokenType.RP)
+        
+        # Check for return type annotation: -> type
+        return_type = None
+        if self.peek().type == TokenType.ARROW:
+            self.consume(TokenType.ARROW)
+            return_type = self.consume(TokenType.IDENTIFIER).value
+        
         self.consume(TokenType.LBRACE)
         body = self.parse_block()
         self.consume(TokenType.RBRACE)
         
-        return ("func_def", name, params, body)
+        return ("func_def", name, params, body, is_async, param_types, return_type)
+    
+    def parse_var_declaration(self, kind: str) -> tuple:
+        """Parse let/const/var declarations: let x = 10;"""
+        self.consume()  # consume let/const/var
+        name_token = self.consume(TokenType.IDENTIFIER)
+        name = name_token.value
+        
+        # Check for type annotation: name: type
+        var_type = None
+        if self.peek().type == TokenType.COLON:
+            self.consume(TokenType.COLON)
+            var_type = self.consume(TokenType.IDENTIFIER).value
+        
+        init_value = None
+        if self.peek().type == TokenType.EQ:
+            self.consume(TokenType.EQ)
+            init_value = self.parse_expression()
+        
+        return ("var_decl", kind, name, init_value, var_type)
     
     def parse_class(self) -> tuple:
         self.consume(TokenType.CLASS)
@@ -1661,10 +1706,19 @@ class VM:
             "lambda": self._eval_lambda,
             "ternary": self._eval_ternary,
             "this": self._eval_this,
+            "this": self._eval_this,
             "await": self._eval_await,
             "call": self._eval_call,
             "program": self._eval_program,
+            "var_decl": self._eval_var_decl,
         }
+
+    def _eval_await(self, node: tuple, scope: Dict) -> Any:
+        _, operand = node[0:2]
+        task = yield from self.eval_gen(operand, scope)
+        if inspect.isgenerator(task):
+            return (yield from task)
+        return task
     
     def _create_builtins(self) -> Dict[str, Callable]:
         builtins_dict = {
@@ -1689,7 +1743,81 @@ class VM:
         }
         builtins_dict["global"] = GlobalNamespace(builtins_dict)
         builtins_dict["Hexza"] = self._create_hexza_module()
+        builtins_dict["html"] = self._create_html_module()
         return builtins_dict
+    
+    def _create_html_module(self) -> Dict[str, Any]:
+        """HTML/Web DSL module for clean template generation"""
+        def tag(name: str, props: dict = None, children: list = None) -> str:
+            """Create HTML tag: tag('div', {'class': 'card'}, ['Hello'])"""
+            props = props or {}
+            children = children or []
+            
+            # Build attributes
+            attrs = ""
+            for key, val in props.items():
+                if val is True:
+                    attrs += f" {key}"
+                elif val is not False and val is not None:
+                    attrs += f' {key}="{val}"'
+            
+            # Self-closing tags
+            if name in ['img', 'br', 'hr', 'input', 'meta', 'link']:
+                return f"<{name}{attrs} />"
+            
+            # Build children
+            content = ""
+            for child in children:
+                if isinstance(child, (list, tuple)):
+                    content += "".join(str(c) for c in child)
+                else:
+                    content += str(child)
+            
+            return f"<{name}{attrs}>{content}</{name}>"
+        
+        def component(render_func: Callable) -> Callable:
+            """Decorator to create reusable components"""
+            def wrapper(*args, **kwargs):
+                return render_func(*args, **kwargs)
+            wrapper.__component__ = True
+            return wrapper
+        
+        def render_list(items: list, render_item: Callable) -> str:
+            """Render list of items: render_list(products, lambda p: tag('div', {}, [p.name]))"""
+            return "".join(render_item(item) for item in items)
+        
+        def css(styles: dict) -> str:
+            """Convert dict to CSS string: css({'color': 'red', 'font-size': '14px'})"""
+            return ";".join(f"{k}:{v}" for k, v in styles.items())
+        
+        # Shortcuts for common tags
+        def div(props=None, children=None): return tag('div', props, children)
+        def span(props=None, children=None): return tag('span', props, children)
+        def p(props=None, children=None): return tag('p', props, children)
+        def h1(props=None, children=None): return tag('h1', props, children)
+        def h2(props=None, children=None): return tag('h2', props, children)
+        def h3(props=None, children=None): return tag('h3', props, children)
+        def img(props): return tag('img', props, None)
+        def a(props, children): return tag('a', props, children)
+        def button(props, children): return tag('button', props, children)
+        def input_tag(props): return tag('input', props, None)
+        
+        return {
+            "tag": tag,
+            "component": component,
+            "render_list": render_list,
+            "css": css,
+            "div": div,
+            "span": span,
+            "p": p,
+            "h1": h1,
+            "h2": h2,
+            "h3": h3,
+            "img": img,
+            "a": a,
+            "button": button,
+            "input": input_tag,
+        }
     
     def _create_hexza_module(self) -> Dict[str, Any]:
         """Create the Universal Hexza module with all sub-modules"""
@@ -2105,50 +2233,75 @@ function sanitize(obj) {
             self.web_app = Flask(__name__)
         except ImportError:
             raise ImportError("Flask is required for web framework. Install with: pip install flask")
-    
+
     def _register_flask_route(self, method: str, path: str, handler_func: HexzaFunction) -> None:
         if not self.web_app:
             return
-        
-        from flask import request, jsonify
-        
+
+        from flask import request, jsonify, Response
+
         def flask_handler():
             try:
                 local_scope = handler_func.closure.copy()
                 local_scope["request_args"] = dict(request.args)
                 local_scope["request_json"] = request.get_json(silent=True) or {}
                 local_scope["request_method"] = request.method
+
                 for stmt in handler_func.body:
                     self.eval(stmt, local_scope)
-                
-                return jsonify({"status": "ok"}), 200
-            
+
+                return Response("", mimetype="text/plain")
+
             except ReturnException as e:
-                return jsonify({"result": e.value}), 200
+                val = e.value
+
+                if isinstance(val, str):
+                    return Response(val, mimetype="text/html")
+
+                if isinstance(val, dict):
+                    return jsonify(val)
+
+                return Response(str(val), mimetype="text/plain")
+
             except HexzaError as e:
                 return jsonify({"error": str(e)}), 500
+
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
-            
+
         self.web_app.add_url_rule(
             path,
             endpoint=f"{method}_{path}",
             view_func=flask_handler,
             methods=[method]
         )
-    
+
     def run_web_server(self, host: str = "127.0.0.1", port: int = 5000) -> None:
         if not self.web_app:
             self._init_web_framework()
-        
+
         if self.web_app:
             print(f"🚀 Starting web server on {host}:{port}")
             self.web_app.run(host=host, port=port, debug=False)
 
     def eval(self, node: Any, scope: Optional[Dict[str, Any]] = None) -> Any:
+        gen = self.eval_gen(node, scope)
+        if inspect.isgenerator(gen):
+            try:
+                # Run the generator to completion
+                result = None
+                for yielded in gen:
+                    pass
+                return result
+            except StopIteration as e:
+                return e.value
+            except ReturnException as e:
+                return e.value
+        return gen
+
+    def eval_gen(self, node: Any, scope: Optional[Dict[str, Any]] = None) -> Any:
         if scope is None:
             scope = self.global_scope
-        
         if not node:
             return None
         
@@ -2156,7 +2309,10 @@ function sanitize(obj) {
         handler = self._eval_handlers.get(node_type)
         
         if handler:
-            return handler(node, scope)
+            res = handler(node, scope)
+            if inspect.isgenerator(res):
+                return (yield from res)
+            return res
         
         raise SyntaxError(f"Unknown node type: {node_type}")
     
@@ -2166,8 +2322,8 @@ function sanitize(obj) {
     
     def _eval_binop(self, node: tuple, scope: Dict) -> Any:
         _, op, left, right = node[0:4]
-        lval = self.eval(left, scope)
-        rval = self.eval(right, scope)
+        lval = yield from self.eval_gen(left, scope)
+        rval = yield from self.eval_gen(right, scope)
         
         op_map = {
             "PLUS": lambda a, b: a + b,
@@ -2198,8 +2354,10 @@ function sanitize(obj) {
     
     def _eval_call(self, node: tuple, scope: Dict) -> Any:
         _, func_expr, args_nodes = node[0:3]
-        func = self.eval(func_expr, scope)
-        args = [self.eval(arg, scope) for arg in args_nodes]
+        func = yield from self.eval_gen(func_expr, scope)
+        args = []
+        for arg in args_nodes:
+            args.append((yield from self.eval_gen(arg, scope)))
 
         if isinstance(func, HexzaFunction):
             local_scope = func.closure.copy()
@@ -2207,10 +2365,23 @@ function sanitize(obj) {
             for i, param in enumerate(func.params):
                 local_scope[param] = args[i] if i < len(args) else None
             
+            # If async, return a generator that executes the body
+            if func.is_async:
+                def async_body_runner():
+                    result = None
+                    try:
+                        for stmt in func.body:
+                            result = yield from self.eval_gen(stmt, local_scope)
+                    except ReturnException as e:
+                        result = e.value
+                    return result
+                return async_body_runner()
+
+            # If sync, execute immediately
             result = None
             try:
                 for stmt in func.body:
-                    result = self.eval(stmt, local_scope)
+                    result = yield from self.eval_gen(stmt, local_scope)
             except ReturnException as e:
                 result = e.value
             
@@ -2228,7 +2399,7 @@ function sanitize(obj) {
         _, statements = node[0:2]
         result = None
         for stmt in statements:
-            result = self.eval(stmt, scope)
+            result = yield from self.eval_gen(stmt, scope)
         return result
     
     def _eval_str(self, node: tuple, scope: Dict) -> Any:
@@ -2244,13 +2415,17 @@ function sanitize(obj) {
     
     def _eval_array(self, node: tuple, scope: Dict) -> List:
         _, elements = node[0:2]
-        return [self.eval(elem, scope) for elem in elements]
+        result = []
+        for elem in elements:
+            result.append((yield from self.eval_gen(elem, scope)))
+        return result
     
     def _eval_obj(self, node: tuple, scope: Dict) -> Dict:
         _, pairs = node[0:2]
         result = {}
+        result = {}
         for key, value_expr in pairs:
-            result[key] = self.eval(value_expr, scope)
+            result[key] = yield from self.eval_gen(value_expr, scope)
         return result
     
     def _eval_var(self, node: tuple, scope: Dict) -> Any:
@@ -2261,7 +2436,7 @@ function sanitize(obj) {
     
     def _eval_unary(self, node: tuple, scope: Dict) -> Any:
         _, op, operand = node[0:3]
-        val = self.eval(operand, scope)
+        val = yield from self.eval_gen(operand, scope)
         
         op_map = {
             "NOT": lambda x: not x,
@@ -2272,13 +2447,13 @@ function sanitize(obj) {
     
     def _eval_index(self, node: tuple, scope: Dict) -> Any:
         _, obj_expr, index_expr = node[0:3]
-        obj = self.eval(obj_expr, scope)
-        index = self.eval(index_expr, scope)
+        obj = yield from self.eval_gen(obj_expr, scope)
+        index = yield from self.eval_gen(index_expr, scope)
         return obj[index]
     
     def _eval_member(self, node: tuple, scope: Dict) -> Any:
         _, obj_expr, member = node[0:3]
-        obj = self.eval(obj_expr, scope)
+        obj = yield from self.eval_gen(obj_expr, scope)
         if isinstance(obj, HexzaInstance):
             if member in obj.__dict__:
                 return obj.__dict__[member]
@@ -2313,16 +2488,16 @@ function sanitize(obj) {
     
     def _eval_assign(self, node: tuple, scope: Dict) -> Any:
         _, lvalue, rvalue = node[0:3]
-        value = self.eval(rvalue, scope)
+        value = yield from self.eval_gen(rvalue, scope)
         
         if lvalue[0] == "var":
             scope[lvalue[1]] = value
         elif lvalue[0] == "index":
-            obj = self.eval(lvalue[1], scope)
-            index = self.eval(lvalue[2], scope)
+            obj = yield from self.eval_gen(lvalue[1], scope)
+            index = yield from self.eval_gen(lvalue[2], scope)
             obj[index] = value
         elif lvalue[0] == "member":
-            obj = self.eval(lvalue[1], scope)
+            obj = yield from self.eval_gen(lvalue[1], scope)
             member = lvalue[2]
             if isinstance(obj, HexzaInstance):
                 obj.__dict__[member] = value
@@ -2337,17 +2512,17 @@ function sanitize(obj) {
     
     def _eval_if(self, node: tuple, scope: Dict) -> Any:
         _, condition, true_block, false_block = node[0:4]
-        cond_val = self.eval(condition, scope)
+        cond_val = yield from self.eval_gen(condition, scope)
         
         if cond_val:
             result = None
             for stmt in true_block:
-                result = self.eval(stmt, scope)
+                result = yield from self.eval_gen(stmt, scope)
             return result
         elif false_block:
             result = None
             for stmt in false_block:
-                result = self.eval(stmt, scope)
+                result = yield from self.eval_gen(stmt, scope)
             return result
         return None
     
@@ -2355,10 +2530,10 @@ function sanitize(obj) {
         _, condition, body = node[0:3]
         result = None
         
-        while self.eval(condition, scope):
+        while (yield from self.eval_gen(condition, scope)):
             try:
                 for stmt in body:
-                    result = self.eval(stmt, scope)
+                    result = yield from self.eval_gen(stmt, scope)
             except BreakException:
                 break
             except ContinueException:
@@ -2370,35 +2545,35 @@ function sanitize(obj) {
         _, init, cond, inc, body = node[0:5]
         
         if init:
-            self.eval(init, scope)
+            yield from self.eval_gen(init, scope)
         
         result = None
         while True:
-            if cond and not self.eval(cond, scope):
+            if cond and not (yield from self.eval_gen(cond, scope)):
                 break
             try:
                 for stmt in body:
-                    result = self.eval(stmt, scope)
+                    result = yield from self.eval_gen(stmt, scope)
             except BreakException:
                 break
             except ContinueException:
                 pass
             
             if inc:
-                self.eval(inc, scope)
+                yield from self.eval_gen(inc, scope)
         
         return result
     
     def _eval_for_in(self, node: tuple, scope: Dict) -> Any:
         _, var_name, iterable_expr, body = node[0:4]
-        iterable = self.eval(iterable_expr, scope)
+        iterable = yield from self.eval_gen(iterable_expr, scope)
         result = None
         
         for item in iterable:
             scope[var_name] = item
             try:
                 for stmt in body:
-                    result = self.eval(stmt, scope)
+                    result = yield from self.eval_gen(stmt, scope)
             except BreakException:
                 break
             except ContinueException:
@@ -2407,10 +2582,37 @@ function sanitize(obj) {
         return result
     
     def _eval_func_def(self, node: tuple, scope: Dict) -> HexzaFunction:
-        _, name, params, body = node[0:4]
-        func = HexzaFunction(name, params, body, scope.copy())
+        parts = node[0:]
+        name = parts[1]
+        params = parts[2]
+        body = parts[3]
+        is_async = parts[4] if len(parts) > 4 else False
+        
+        func = HexzaFunction(name, params, body, scope.copy(), is_async=is_async)
         scope[name] = func
         return func
+    
+    def _eval_var_decl(self, node: tuple, scope: Dict) -> Any:
+        """Evaluate variable declaration: let x = 10 or const PI = 3.14"""
+        _, kind, name, init_value = node[0:4]
+        
+        value = None
+        if init_value:
+            value = yield from self.eval_gen(init_value, scope)
+        
+        # Store variable in scope
+        if kind == "const":
+            # Mark as const (we'll add enforcement later)
+            scope[name] = value
+            # Store const names in a special set if not exists
+            if not hasattr(scope, '_consts'):
+                if isinstance(scope, dict):
+                    scope['__consts__'] = set()
+                scope['__consts__'].add(name)
+        else:
+            scope[name] = value
+        
+        return value
     
     def _eval_class_def(self, node: tuple, scope: Dict) -> HexzaClass:
         _, name, base, methods = node[0:4]
@@ -2430,14 +2632,16 @@ function sanitize(obj) {
     def _eval_new(self, node: tuple, scope: Dict) -> HexzaInstance:
         _, class_name, args_nodes = node[0:3]
         cls = scope[class_name]
-        args = [self.eval(arg, scope) for arg in args_nodes]
+        args = []
+        for arg in args_nodes:
+            args.append((yield from self.eval_gen(arg, scope)))
         return cls(*args, vm=self)
     
     def _eval_return(self, node: tuple, scope: Dict) -> None:
         _, value_expr = node[0:2]
         value = None
         if value_expr:
-            value = self.eval(value_expr, scope)
+            value = yield from self.eval_gen(value_expr, scope)
         raise ReturnException(value)
     
     def _eval_break(self, node: tuple, scope: Dict) -> None:
@@ -2448,7 +2652,7 @@ function sanitize(obj) {
     
     def _eval_expr(self, node: tuple, scope: Dict) -> Any:
         _, expr = node[0:2]
-        return self.eval(expr, scope)
+        return (yield from self.eval_gen(expr, scope))
     
     def _eval_import(self, node: tuple, scope: Dict) -> None:
         _, module_path, ext_hint, alias = node[0:4]
@@ -2538,7 +2742,7 @@ function sanitize(obj) {
     
     def _eval_export(self, node: tuple, scope: Dict) -> Any:
         _, stmt = node[0:2]
-        result = self.eval(stmt, scope)
+        result = yield from self.eval_gen(stmt, scope)
         if stmt[0] == "func_def":
             func_name = stmt[1]
             if func_name in scope:
@@ -2553,22 +2757,22 @@ function sanitize(obj) {
         
         try:
             for stmt in try_block:
-                result = self.eval(stmt, scope)
+                result = yield from self.eval_gen(stmt, scope)
         except Exception as e:
             if catch_block and error_var:
                 scope[error_var] = str(e)
                 for stmt in catch_block:
-                    result = self.eval(stmt, scope)
+                    result = yield from self.eval_gen(stmt, scope)
         finally:
             if finally_block:
                 for stmt in finally_block:
-                    self.eval(stmt, scope)
+                    yield from self.eval_gen(stmt, scope)
         
         return result
     
     def _eval_throw(self, node: tuple, scope: Dict) -> None:
         _, value_expr = node[0:2]
-        value = self.eval(value_expr, scope)
+        value = yield from self.eval_gen(value_expr, scope)
         raise HexzaError(str(value))
     
     def _eval_api_def(self, node: tuple, scope: Dict) -> None:
@@ -2618,15 +2822,13 @@ function sanitize(obj) {
     
     def _eval_ternary(self, node: tuple, scope: Dict) -> Any:
         _, condition, true_expr, false_expr = node[0:4]
-        cond_val = self.eval(condition, scope)
-        return self.eval(true_expr, scope) if cond_val else self.eval(false_expr, scope)
+        cond_val = yield from self.eval_gen(condition, scope)
+        return (yield from self.eval_gen(true_expr, scope)) if cond_val else (yield from self.eval_gen(false_expr, scope))
     
     def _eval_this(self, node: tuple, scope: Dict) -> Any:
         return scope.get("__hexza_self__")
     
-    def _eval_await(self, node: tuple, scope: Dict) -> Any:
-        _, expr = node[0:2]
-        return self.eval(expr, scope)
+
 def run_repl(pkg_mgr: PackageManager) -> None:
     vm = VM(pkg_mgr, enable_web=False)
     print("Hexza v1.0 - Universal Language (type 'exit' to quit)")

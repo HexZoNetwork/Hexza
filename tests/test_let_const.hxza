@@ -1,0 +1,25 @@
+// Test let/const scoping
+let x = 10
+const PI = 3.14159
+
+print("x:", x)
+print("PI:", PI)
+
+// Test reassignment
+x = 20
+print("x after reassignment:", x)
+
+// Test block scoping (currently scopes are the same, but syntax works)
+if (true) {
+    let y = 30
+    print("y in block:", y)
+}
+
+// Build list with let
+products = []
+for (i in range(3)) {
+    let product_name = "Product " + str(i)
+    products.push(product_name)
+}
+
+print("Products:", products)

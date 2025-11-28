@@ -1,0 +1,7 @@
+// Messy file
+func main() {
+    print("Hello")
+    if (true) {
+        print("Nested")
+    }
+}

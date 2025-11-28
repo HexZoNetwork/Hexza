@@ -1,0 +1,200 @@
+tes = 1
+tes = "Zanz LCs"
+bkps = "129.9000"
+gmbarsss = "https://picsum.photos/300?1"
+
+ssss = 2
+tess = "Bokeps Dezz"
+bkpss = "499.000"
+gmbarssss = "https://picsum.photos/300?2"
+
+tesss = 3
+bkp = "Kntol Qiu"
+hrgas = "89.9000"
+gmbarss = "https://picsum.photos/300?3"
+
+func link(id) {
+    if (id == 1) {
+        return "1|" + tes + "|" + bkps + "|" + gmbarsss
+    }
+
+    if (id == 2) {
+        return "2|" + tess + "|" + bkpss + "|" + gmbarssss
+    }
+
+    if (id == 3) {
+        return "3|" + bkp + "|" + hrgas + "|" + gmbarss
+    }
+
+    return "0|NOTFOUND|0|none"
+}
+func home() {
+    html = """
+    <html>
+    <head>
+        <title>Test</title>
+        <style>
+            body{margin:0;font-family:Arial;background:#eef0f3}
+            .nav{background:white;padding:20px;font-size:22px;font-weight:bold}
+            .sa{
+                padding:20px;
+                display:grid;
+                grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+                gap:20px;
+            }
+            .sasa{
+                background:white;
+                padding:12px;
+                border-radius:12px;
+                box-shadow:0 2px 8px rgba(0,0,0,0.10);
+                text-align:center;
+            }
+            img{
+                width:100%;
+                height:140px;
+                object-fit:cover;
+                border-radius:8px;
+            }
+            .za{
+                margin-top:10px;
+                display:inline-block;
+                padding:8px 12px;
+                background:#2563eb;
+                color:white;
+                border-radius:8px;
+                text-decoration:none;
+                font-size:14px;
+            }
+            h3{font-size:16px;margin:8px 0}
+            .sas{font-size:15px;margin-top:6px}
+        </style>
+    </head>
+    <body>
+        <div class="nav">Hexza Store</div>
+        <div class="sa">
+    """
+    html = html + """
+        <div class='sasa'>
+            <img src='""" + gmbarsss + """'/>
+            <h3>""" + tes + """</h3>
+            <div class='sas'>Rp """ + bkps + """</div>
+            <a class='za' href="/product?id=1">Detail</a>
+        </div>
+    """
+    html = html + """
+        <div class='sasa'>
+            <img src='""" + gmbarssss + """'/>
+            <h3>""" + tess + """</h3>
+            <div class='sas'>Rp """ + bkpss + """</div>
+            <a class='za' href="/product?id=2">Detail</a>
+        </div>
+    """
+    html = html + """
+        <div class='sasa'>
+            <img src='""" + gmbarss + """'/>
+            <h3>""" + bkp + """</h3>
+            <div class='sas'>Rp """ + hrgas + """</div>
+            <a class='za' href="/product?id=3">Detail</a>
+        </div>
+    """
+
+    html = html + "</div></body></html>"
+    return html
+}
+func product(request_args) {
+    q = request_args
+    if (!q.id) {
+        return "<h1>Bokep err</h1>"
+    }
+
+    id = int(q.id)
+
+    raw = link(id)
+    parts = raw.split("|")
+
+    if (parts[0] == "0") {
+        return "<h1>Kntl err</h1>"
+    }
+
+    nma = parts[1]
+    hrga = parts[2]
+    gmbr = parts[3]
+
+    return tesut(nma, hrga, gmbr)
+}
+
+
+
+func tesut(nma, hrga, gmbr) {
+    html = """
+    <html>
+    <head>
+        <title>""" + nma + """</title>
+        <style>
+            body{font-family:Arial;background:#eef0f3;padding:40px}
+            .sa{
+                width:360px;
+                margin:auto;
+                background:white;
+                padding:20px;
+                border-radius:16px;
+                box-shadow:0 3px 10px rgba(0,0,0,0.1)
+            }
+            img{
+                width:100%;
+                height:200px;
+                object-fit:cover;
+                border-radius:12px;
+            }
+            .sasa{margin-top:12px;font-size:22px}
+            .sasasa{
+                margin-top:20px;
+                display:inline-block;
+                padding:10px 14px;
+                background:#2563eb;
+                color:white;
+                border-radius:10px;
+                text-decoration:none
+            }
+        </style>
+    </head>
+    <body>
+        <div class="sa">
+            <img src='""" + gmbr + """'/>
+            <h2>""" + nma + """</h2>
+            <div class="sasa">Rp """ + hrga + """</div>
+            <a class="sasasa" href="/">Back</a>
+        </div>
+    </body>
+    </html>
+    """
+
+    return html
+}
+
+func product(request_args) {
+    q = request_args
+    if (!q.id) {
+        return "<h1>Babie Err</h1>"
+    }
+
+    id = int(q.id)
+
+    raw = link(id)
+    parts = raw.split("|")
+
+    if (parts[0] == "0") {
+        return "<h1>Err kntl</h1>"
+    }
+
+    nma = parts[1]
+    hrga = parts[2]
+    gmbr = parts[3]
+
+    return tesut(nma, hrga, gmbr)
+}
+
+api apy {
+    GET "/" -> home
+    GET "/product" -> product
+}

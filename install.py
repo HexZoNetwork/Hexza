@@ -48,16 +48,20 @@ def remove_from_path_windows(p):
 
 def install_windows():
     print(f"\n--- Installing {APP_NAME} on Windows ---")
-    base=os.getenv('LOCALAPPDATA') or os.path.join(os.path.expanduser('~'),'AppData','Local')
-    root=os.path.join(base,APP_NAME)
-    bind=os.path.join(root,'bin')
-    os.makedirs(bind,exist_ok=True)
-    src=os.path.join(os.path.dirname(__file__),SCRIPT_NAME)
-    dst=os.path.join(bind,SCRIPT_NAME)
-    safe_copy(src,dst)
-    launcher=os.path.join(bind,f"{APP_NAME.lower()}.bat")
-    with open(launcher,"w") as f:
-        f.write(f'@echo off\r\npython "{dst}" %*\r\n')
+
+    base = os.getenv("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Local")
+    root = os.path.join(base, APP_NAME)
+    bind = os.path.join(root, "bin")
+    os.makedirs(bind, exist_ok=True)
+    src_main = os.path.join(os.path.dirname(__file__), SCRIPT_NAME)
+    dst_main = os.path.join(bind, SCRIPT_NAME)
+    safe_copy(src_main, dst_main)
+    src_llvm = os.path.join(os.path.dirname(__file__), "llvm_backend.py")
+    dst_llvm = os.path.join(bind, "llvm_backend.py")
+    safe_copy(src_llvm, dst_llvm)
+    launcher = os.path.join(bind, f"{APP_NAME.lower()}.bat")
+    with open(launcher, "w", encoding="utf-8") as f:
+        f.write(f'@echo off\r\npython "{dst_main}" %*\r\n')
 
     add_to_path_windows(bind)
 
@@ -91,6 +95,12 @@ def install_linux():
             f"p=os.path.expanduser('~/.local/lib/{APP_NAME.lower()}/{SCRIPT_NAME}')\n"
             f"os.execv(sys.executable,[sys.executable,p]+sys.argv[1:])\n"
         )
+    
+    # Make executable
+    os.chmod(execp, os.stat(execp).st_mode | stat.S_IEXEC)
+
+    print("\n[INFO] Installation finished.")
+    print(f"Run:  {APP_NAME.lower()}")
 
 def uninstall_linux():
     print(f"\n--- Uninstalling {APP_NAME} on Linux ---")
@@ -138,9 +148,16 @@ def check(cmd, label):
 
 def main():
     args=sys.argv[1:]
-    if "--uninstall" in args:
-        if sys.platform=="win32": uninstall_windows()
-        elif sys.platform.startswith("linux"): uninstall_linux()
+    
+    # Check for flags
+    no_modules = "--nomodule" in args
+    uninstall = "--uninstall" in args
+    
+    if uninstall:
+        if sys.platform=="win32": 
+            uninstall_windows()
+        elif sys.platform.startswith("linux"): 
+            uninstall_linux()
         else:
             print("[ERROR] Only Linux + Windows supported")
         return
@@ -153,10 +170,16 @@ def main():
 
     if sys.platform=="win32":
         install_windows()
-        install_dependencies()
+        if not no_modules:
+            install_dependencies()
+        else:
+            print("\n[INFO] Skipping module installation (--nomodule)")
     elif sys.platform.startswith("linux"):
         install_linux()
-        install_dependencies()
+        if not no_modules:
+            install_dependencies()
+        else:
+            print("\n[INFO] Skipping module installation (--nomodule)")
     else:
         print("[ERROR] Unsupported OS")
         sys.exit(1)

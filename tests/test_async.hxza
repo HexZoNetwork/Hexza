@@ -1,0 +1,12 @@
+async func say_hello() {
+    print("Hello");
+    return 1;
+}
+
+async func main() {
+    print("Start");
+    result = await say_hello();
+    print("Result: ", result);
+}
+
+await main();
